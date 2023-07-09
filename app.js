@@ -1,5 +1,8 @@
 const express = require('express')  // Importamos express
 const bodyParser = require('body-parser') // bodyParser sirve para transformar el body de la petición de forma mas simple que la nativa de node
+const mongoose = require('mongoose')
+
+const url = 'mongodb+srv://root:root@cluster1.mymzlwb.mongodb.net/places_app?retryWrites=true&w=majority'
 
 const placesRoutes = require('./routes/places-routes') // Importamos los endpoints de places
 const userRoutes = require('./routes/user-routes') // Importamos los endpoints de users
@@ -22,4 +25,12 @@ app.use((error, req, res, next) => { // Middleware que retorna un mensaje de err
     res.json({ message: error.message || 'An unknown error occurred!' })
 });
 
-app.listen(5000) // Método que permite a express escuchar todas las peticiones en el puerto indicado (Hace que se mantenga corriendo la aplicación)
+mongoose
+    .connect(url)
+    .then(() => {
+        app.listen(5000) // Método que permite a express escuchar todas las peticiones en el puerto indicado (Hace que se mantenga corriendo la aplicación)
+        console.log('Connected to database');
+    })
+    .catch((err) => {
+        console.log(err);
+    })
