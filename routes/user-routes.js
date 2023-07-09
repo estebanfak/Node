@@ -7,7 +7,8 @@ const routes = express.Router() // acá vamos a acumular todas las rutas de plac
 
 routes.get('/', usersController.getAllUsers) // Indicamos el tipo de petición y el método a ejecutar
 routes.post('/signup', [
-    check('username').normalizeEmail().isEmail(), // Con check hacemos una validación previa
+    check('name').not().isEmpty(),  // Con check hacemos una validación previa
+    check('email').normalizeEmail().isEmail(),
     check('password').not().isEmpty(),
 
 ], usersController.addNewUser)
