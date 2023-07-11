@@ -1,8 +1,6 @@
 const HttpError = require('../models/http-error')
-const { v4: uuid } = require('uuid');
 const { validationResult } = require('express-validator')
 const User = require('../models/user');
-const { response } = require('express');
 
 const getAllUsers = async (req, res, next) => {
     let users;
@@ -16,7 +14,6 @@ const getAllUsers = async (req, res, next) => {
     }
     res.json({users: users.map(u=>u.toObject({getters: true}))})
 }
-
 const addNewUser = async (req, res, next) => {
     const errors = validationResult(req)
     if(!errors.isEmpty()){
@@ -39,9 +36,9 @@ const addNewUser = async (req, res, next) => {
     }catch(err){
         return next(new HttpError('Error while creating user, please try again', 500))
     }
+    newUser.password = null;
     res.status(201).json({newUser: newUser.toObject({getters: true})})
 }
-
 const login = async (req, res, next) => {
     const {email, password} = req.body
     let userDB;
@@ -57,8 +54,6 @@ const login = async (req, res, next) => {
     }
     res.json({message: 'User logged in correctly!'})
 }
-
-
 
 module.exports = {
     getAllUsers,
