@@ -52,7 +52,7 @@ const login = async (req, res, next) => {
         return next(new HttpError('Username or password incorrect', 401))
         
     }
-    res.json({message: 'User logged in correctly!'})
+    res.json({message: 'User logged in correctly!', user: userDB.toObject({getters: true})})
 }
 
 module.exports = {

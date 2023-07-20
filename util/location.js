@@ -10,7 +10,7 @@ const getCoordForAddress = async (address) => {
     const coordinates = {}
     if(response?.data?.features[0]?.center){
         coordinates.lat = response.data.features[0].center[1]
-        coordinates.long = response.data.features[0].center[0]
+        coordinates.lng = response.data.features[0].center[0]
         return coordinates;
     }else{
         throw new HttpError('Location not found', 422)

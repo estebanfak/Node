@@ -114,7 +114,7 @@ const updatePlace = async (req, res, next) => {
         description
     }
     try {
-        placeToPatch = await Place.findByIdAndUpdate(placeId, {newPlace})
+        placeToPatch = await Place.findByIdAndUpdate(placeId, {...newPlace, title, description})
     }catch(err){
         return next(new HttpError('Error trying to update the place.', 500))
     }
