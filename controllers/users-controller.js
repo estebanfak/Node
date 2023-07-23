@@ -1,58 +1,106 @@
+const bycrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 const HttpError = require('../models/http-error')
 const { validationResult } = require('express-validator')
 const User = require('../models/user');
 
 const getAllUsers = async (req, res, next) => {
     let users;
-    try{
+    try {
         users = await User.find({}, '-password');
-    }catch(err){
+    } catch (err) {
         return next(new HttpError('Error while finding users, please try again', 500))
     }
-    if(!users){
+    if (!users) {
         return next(new HttpError('Could not find any user', 500))
     }
-    res.json({users: users.map(u=>u.toObject({getters: true}))})
+    res.json({ users: users.map(u => u.toObject({ getters: true })) })
 }
 const addNewUser = async (req, res, next) => {
     const errors = validationResult(req)
-    if(!errors.isEmpty()){
+    if (!errors.isEmpty()) {
         return next(new HttpError('Invalid inputs passed, please check your data', 422))
     }
-    const {name, email, password} = req.body
+    const { name, email, password } = req.body
 
-    if(await User.exists({email})){
+    if (await User.exists({ email })) {
         return next(new HttpError('Username already exists on database', 500))
     }
+
+    let hashedPassword;
+    try {
+        hashedPassword = await bycrypt.hash(password, 12)
+    } catch (err) {
+        const error = new HttpError('Could not create the user, please try again', 500)
+        return next(error);
+    }
+
     const newUser = new User({
         name,
         email,
-        password,
-        image: 'https://static-cse.canva.com/blob/562124/RightBackground4.jpg',
+        password: hashedPassword,
+        image: req.file.path,
         places: []
     })
-    try{
+    try {
         await newUser.save()
-    }catch(err){
+    } catch (err) {
         return next(new HttpError('Error while creating user, please try again', 500))
     }
-    newUser.password = null;
-    res.status(201).json({newUser: newUser.toObject({getters: true})})
+
+    let token
+    try {
+        token = jwt.sign(
+            {
+                userId: newUser.id, email: newUser.email
+            },
+            'super_secret_phrase',
+            { expiresIn: '1h' }
+        )
+    } catch (err) {
+        return next(new HttpError('Error while creating user, please try again', 500))
+    }
+
+
+    res.status(201).json({ userId: newUser.id, email: newUser.email, token, token })
 }
 const login = async (req, res, next) => {
-    const {email, password} = req.body
+    const { email, password } = req.body
     let userDB;
-    try{
-        userDB = await User.findOne({email: email})
-    }catch(err){
+    try {
+        userDB = await User.findOne({ email: email })
+    } catch (err) {
         return next(new HttpError('Something went wrong, please try again', 500))
     }
 
-    if(!userDB || userDB.password !== password){
-        return next(new HttpError('Username or password incorrect', 401))
-        
+    if (!userDB) {
+        return next(new HttpError('Username or password incorrect', 403))
     }
-    res.json({message: 'User logged in correctly!', user: userDB.toObject({getters: true})})
+
+    let isValidPassword;
+    try {
+        isValidPassword = await bycrypt.compare(password, userDB.password)
+    } catch (err) {
+        return new HttpError('Could not log you in, please verify your credentials and try again', 500)
+    }
+
+    if (!isValidPassword) {
+        return next(new HttpError('Username or password incorrect', 403))
+    }
+
+    let token
+    try {
+        token = jwt.sign(
+            {
+                userId: userDB.id, email: userDB.email
+            },
+            'super_secret_phrase',
+            { expiresIn: '1h' }
+        )
+    } catch (err) {
+        return next(new HttpError('Error while logging in, please try again', 500))
+    }
+    res.json({ userId: userDB.id, email: userDB.email, token, token })
 }
 
 module.exports = {

@@ -1,3 +1,4 @@
+const fs = require('fs')
 const HttpError = require('../models/http-error') // Importamos nuestro error personalizado
 const { validationResult } = require('express-validator') // Importamos el validador de datos, pero acá hacemos la validación según lo que indicamos en los routers
 const mongoose = require('mongoose')
@@ -54,7 +55,7 @@ const createPlace = async (req, res, next) => {
     if(!errors.isEmpty()){
         return next(new HttpError('Invalid inputs passed, please check your data', 422))
     }
-    const { title, description, address, creator } = req.body
+    const { title, description, address } = req.body
     let coordinates
     try{
         coordinates = await getCoordForAddress(address)
@@ -64,15 +65,16 @@ const createPlace = async (req, res, next) => {
     const createdPlace = new Place({
         title,
         description,
-        image: 'https://static-cse.canva.com/blob/562124/RightBackground4.jpg',
+        image: req.file.path,
         address,
         location: coordinates,
-        creator
+        image: req.file.path,
+        creator: req.userData.userId
     })
 
     let user;
     try{
-        user = await User.findById(creator);
+        user = await User.findById(req.userData.userId);
     }catch(err){
         return next(new HttpError('Creating place failed, please try again', 500))
     }
@@ -108,17 +110,30 @@ const updatePlace = async (req, res, next) => {
     }
     const placeId = req.params.pid
     const { title, description } = req.body
-    let placeToPatch;
-    const newPlace = {
-        title,
-        description
-    }
+    let place;
+
     try {
-        placeToPatch = await Place.findByIdAndUpdate(placeId, {...newPlace, title, description})
+        place = await Place.findById(placeId)
     }catch(err){
         return next(new HttpError('Error trying to update the place.', 500))
     }
-    res.status(200).json({place: placeToPatch.toObject({ getters: true })})
+    
+    if(place.creator.toString() !== req.userData.userId){
+        return next(new HttpError('You are not allowed to update the place.', 500))
+    }
+
+    place.title = title
+    place.description = description
+
+    try{
+        await place.save()
+    }catch(err){
+        return next(new HttpError('Error trying to update the place.', 500))
+    }
+
+
+
+    res.status(200).json({place: place.toObject({ getters: true })})
 }
 const deletePlace = async (req, res, next) => {
     const placeId = req.params.pid
@@ -131,6 +146,11 @@ const deletePlace = async (req, res, next) => {
     if(!place){
         return next(new HttpError('Could not find the place with the provided id', 404))
     }
+    if(place.creator.id !== req.userData.userId){
+        return next(new HttpError('You are not allowed to delete the place.', 500))
+    }
+
+    const imagePath = place.image
 
     try{
         const sess = await mongoose.startSession()
@@ -142,6 +162,11 @@ const deletePlace = async (req, res, next) => {
     }catch(err){
         return next(new HttpError('Could not delete the place', 500))
     }
+
+    fs.unlink(imagePath, err => {
+        console.error(err);
+    })
+
     res.status(200).json({message: 'Deleted'})
 }
 

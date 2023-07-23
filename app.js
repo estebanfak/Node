@@ -1,3 +1,6 @@
+const fs = require('fs')
+const path = require('path')
+
 const express = require('express')  // Importamos express
 const bodyParser = require('body-parser') // bodyParser sirve para transformar el body de la petición de forma mas simple que la nativa de node
 const mongoose = require('mongoose')
@@ -11,6 +14,8 @@ const HttpError = require('./models/http-error') // Importamos nuestro error per
 const app = express(); // Crea la aplicación express y la asignamos a la variable app
 
 app.use(bodyParser.json()) // Con el método use, registramos un middleware que filtrará todas las peticiones y si tienen un body, lo transforma a json
+
+app.use('/uploads/images', express.static(path.join('uploads', 'images')))
 
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
@@ -26,6 +31,11 @@ app.use((req, res, next) => { // Middleware que usamos cuando apuntamos a un end
     throw error;
 })
 app.use((error, req, res, next) => { // Middleware que retorna un mensaje de error cada vez que llamamos al método next() en los métodos anteriores
+    if(req.file){
+        fs.unlink(req.file.path, err => {
+            console.log(err);
+        })
+    }
     if (res.headerSent) {
         return next()
     }
