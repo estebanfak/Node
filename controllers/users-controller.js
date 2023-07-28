@@ -54,7 +54,7 @@ const addNewUser = async (req, res, next) => {
             {
                 userId: newUser.id, email: newUser.email
             },
-            'super_secret_phrase',
+            process.env.SECRET_PHRASE,
             { expiresIn: '1h' }
         )
     } catch (err) {
@@ -94,7 +94,7 @@ const login = async (req, res, next) => {
             {
                 userId: userDB.id, email: userDB.email
             },
-            'super_secret_phrase',
+            process.env.SECRET_PHRASE,
             { expiresIn: '1h' }
         )
     } catch (err) {
@@ -106,5 +106,5 @@ const login = async (req, res, next) => {
 module.exports = {
     getAllUsers,
     addNewUser,
-    login
+    login,
 };

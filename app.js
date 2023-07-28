@@ -1,11 +1,12 @@
 const fs = require('fs')
 const path = require('path')
+require('dotenv').config()
 
 const express = require('express')  // Importamos express
 const bodyParser = require('body-parser') // bodyParser sirve para transformar el body de la petición de forma mas simple que la nativa de node
 const mongoose = require('mongoose')
 
-const url = 'mongodb+srv://root:root@cluster1.mymzlwb.mongodb.net/mern?retryWrites=true&w=majority'
+const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster1.mymzlwb.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`
 
 const placesRoutes = require('./routes/places-routes') // Importamos los endpoints de places
 const userRoutes = require('./routes/user-routes') // Importamos los endpoints de users

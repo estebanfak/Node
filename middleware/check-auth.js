@@ -11,7 +11,7 @@ module.exports = (req, res, next) => {
         if(!token){
             throw new Error('Authentication failed!')
         }
-        const decodedToken = jwt.decode(token, 'super_secret_phrase')
+        const decodedToken = jwt.decode(token, process.env.SECRET_PHRASE)
         req.userData = {userId: decodedToken.userId}
         next()
     }catch (err){
